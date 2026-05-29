@@ -286,21 +286,13 @@ function speak(text,gender,lang,rate=1){
 // ── AI — calls Netlify function (no API key needed in browser) ────
 async function callAI(system,messages,tries=3){
   // Get Supabase auth token to identify the user (for usage tracking)
-  let token=null;
-  try{
-    const s=await getSupa().auth.getSession();
-    token=s.data?.session?.access_token||null;
-  }catch{}
-
   for(let i=0;i<tries;i++){
     try{
       const r=await fetch("/.netlify/functions/chat",{
         method:"POST",
         headers:{
-          "Content-Type":"application/json",
-       headers:{
-  "Content-Type":"application/json"
-},
+          "Content-Type":"application/json"
+        },
         body:JSON.stringify({system,messages,maxTokens:600})
       });
 
