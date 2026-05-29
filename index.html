@@ -298,8 +298,9 @@ async function callAI(system,messages,tries=3){
         method:"POST",
         headers:{
           "Content-Type":"application/json",
-          ...(token&&{"Authorization":"Bearer "+token})
-        },
+       headers:{
+  "Content-Type":"application/json"
+},
         body:JSON.stringify({system,messages,maxTokens:600})
       });
 
