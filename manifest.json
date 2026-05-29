@@ -1,0 +1,10 @@
+{
+  "name": "Lumio — Learn Anything",
+  "short_name": "Lumio",
+  "description": "AI-powered study assistant",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F3F5FF",
+  "theme_color": "#D4A017",
+  "icons": []
+}
