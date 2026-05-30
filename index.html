@@ -217,7 +217,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 .upgrade-box{background:linear-gradient(135deg,#0D1137,#1a1f5e);border-radius:20px;padding:24px;margin-bottom:16px;color:#fff}
 /* Offline banner */
 .offline-banner{background:#374151;color:#fff;padding:8px 14px;font-size:.78rem;text-align:center;font-weight:600;flex-shrink:0}
-@media(min-width:768px){.app{max-width:520px}}
+@media(min-width:768px){clamp(360px,92vw,960px)}}
 </style>
 </head>
 <body>
@@ -1073,7 +1073,7 @@ function App(){
     const mt=matText(getMats());
     if(!mt){setFlashCards({error:"Ladda upp material först."});setFlashLoad(false);return}
     try{
-      const raw=await callAI("Return only valid JSON.",[{role:"user",content:`Generate 12 flashcards in ${lang} for "${active.name}". JSON: {cards:[{front:TERM,back:DEFINITION}]}. Materials:\n${mt.slice(0,2000)}`}]);
+      const raw=await callAI("Return only valid JSON.",[{role:"user",content:`Generate 12 flashcards in ${lang} for "${active.name}". JSON: {cards:[{front:TERM,back:DEFINITION}]}. Materials:\n${mt.slice(0,4000)}`}]);
       const p=parseJSON(raw);
       setFlashCards(p?.cards?p:{error:"Kunde inte generera."});
       if(p?.cards)addXP(5,"+5 XP ✨");
@@ -1087,7 +1087,7 @@ function App(){
     const mt=matText(getMats());
     if(!mt){setSpeedQ({error:"Ladda upp material först."});setSpeedLoad(false);return}
     try{
-      const raw=await callAI("Return only valid JSON.",[{role:"user",content:`Generate 10 multiple choice questions in ${lang} for "${active.name}". JSON: {"questions":[{"q":"?","correct":"right","wrong1":"w","wrong2":"w","wrong3":"w"}]}. Materials:\n${mt.slice(0,2000)}`}]);
+      const raw=await callAI("Return only valid JSON.",[{role:"user",content:`Generate 10 multiple choice questions in ${lang} for "${active.name}". JSON: {"questions":[{"q":"?","correct":"right","wrong1":"w","wrong2":"w","wrong3":"w"}]}. Materials:\n${mt.slice(0,4000)}`}]);
       let p=parseJSON(raw);
       if(p?.questions)p.questions=p.questions.map(q=>{
         const opts=[q.correct,q.wrong1,q.wrong2,q.wrong3].filter(Boolean);
