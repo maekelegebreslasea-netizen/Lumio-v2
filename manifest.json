@@ -1,10 +1,10 @@
 {
-  "name": "Lumio — Learn Anything",
-  "short_name": "Lumio",
+  "name": "Luxori — AI for Learning",
+  "short_name": "Luxori",
   "description": "AI-powered study assistant",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F3F5FF",
-  "theme_color": "#D4A017",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
   "icons": []
 }
