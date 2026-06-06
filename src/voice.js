@@ -225,10 +225,22 @@ async function vcStart() {
 
   } catch (e) {
     _vc.on = false;
+    _orbMode = 'idle';
     console.error('[Voice] Start error:', e);
-    if (e.name === 'NotAllowedError') vcStatus('⚠️ Allow microphone access');
-    else if (e.name === 'NotFoundError') vcStatus('⚠️ No microphone found');
-    else vcStatus('Error: ' + e.name);
+
+    let msg = '⚠️ ' + e.name;
+    if (e.name === 'NotAllowedError')  msg = '⚠️ Tillåt mikrofon i webbläsaren';
+    else if (e.name === 'NotFoundError') msg = '⚠️ Ingen mikrofon hittades på den här datorn';
+    else if (e.name === 'NotSupportedError') msg = '⚠️ Webbläsaren stöder inte mikrofon';
+
+    vcStatus(msg);
+
+    // Stäng automatiskt efter 3 sekunder
+    setTimeout(() => {
+      vcEnd();
+      // Visa alert så användaren förstår
+      alert(msg + '\n\nVoice call fungerar på mobil eller en dator med mikrofon.');
+    }, 2500);
   }
 }
 
