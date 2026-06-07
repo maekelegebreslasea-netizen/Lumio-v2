@@ -803,18 +803,28 @@ function App() {
   const [correctCount, setCorrectCount] = useState(() => S.get('lx_cc', 0));
   const [materials, setMaterials] = useState([]);
 
-  // Auth
+  // Auth — wait for Supabase to be ready
   useEffect(() => {
-    const supa = getSupa();
-    if (!supa) { setAuthLoad(false); return; }
-    supa.auth.getSession().then(({ data }) => {
-      setUser(data?.session?.user || null);
-      setAuthLoad(false);
-    });
-    const { data: { subscription } } = supa.auth.onAuthStateChange((_, session) => {
-      setUser(session?.user || null);
-    });
-    return () => subscription.unsubscribe();
+    let cancelled = false;
+    const tryInit = (attempts = 0) => {
+      const supa = getSupa();
+      if (!supa) {
+        if (attempts > 20) { setAuthLoad(false); return; } // give up after 2s
+        setTimeout(() => tryInit(attempts + 1), 100);
+        return;
+      }
+      supa.auth.getSession().then(({ data }) => {
+        if (cancelled) return;
+        setUser(data?.session?.user || null);
+        setAuthLoad(false);
+      }).catch(() => { if (!cancelled) setAuthLoad(false); });
+      const { data: { subscription } } = supa.auth.onAuthStateChange((_, session) => {
+        if (!cancelled) setUser(session?.user || null);
+      });
+      return () => { cancelled = true; subscription.unsubscribe(); };
+    };
+    const cleanup = tryInit();
+    return () => { cancelled = true; if (cleanup) cleanup(); };
   }, []);
 
   // Load subjects
@@ -834,16 +844,6 @@ function App() {
   useEffect(() => { S.set('lx_xp', xp); }, [xp]);
   useEffect(() => { S.set('lx_lc', lessonCount); }, [lessonCount]);
   useEffect(() => { S.set('lx_cc', correctCount); }, [correctCount]);
-
-  // Show mobile notes FAB
-  useEffect(() => {
-    const fab = document.getElementById('mob-notes-fab');
-    if (!fab) return;
-    fab.style.display = (user && window.innerWidth < 1024) ? 'flex' : 'none';
-    // Load saved notes
-    const ta = document.getElementById('mob-notes-ta');
-    if (ta) ta.value = localStorage.getItem('lx_notes') || '';
-  }, [user, tab]);
 
   // Desktop nav events
   useEffect(() => {
@@ -893,30 +893,9 @@ function App() {
       });
     }
 
-    if (tab === 'lesson') {
-      if (!active) return h('div', { className: 'page', style: { textAlign: 'center', paddingTop: 60 } },
-        h('div', { style: { fontSize: '2rem', marginBottom: 12 } }, '📚'),
-        h('p', { style: { fontWeight: 600, marginBottom: 8 } }, 'Select a subject first'),
-        h('button', { className: 'btn btn-primary', onClick: () => setTab('subjects') }, 'Go to Subjects')
-      );
-      return h(ChatScreen, { key: 'lesson2', subject: active, materials, lang, level, mode: 'lesson', user, onBack: () => setTab('subjects') });
-    }
-    if (tab === 'dual') {
-      if (!active) return h('div', { className: 'page', style: { textAlign: 'center', paddingTop: 60 } },
-        h('div', { style: { fontSize: '2rem', marginBottom: 12 } }, '🤝'),
-        h('p', { style: { fontWeight: 600, marginBottom: 8 } }, 'Select a subject first'),
-        h('button', { className: 'btn btn-primary', onClick: () => setTab('subjects') }, 'Go to Subjects')
-      );
-      return h(DualScreen, { key: 'dual2', subject: active, materials, lang, level, user, onBack: () => setTab('subjects') });
-    }
-    if (tab === 'games') {
-      if (!active) return h('div', { className: 'page', style: { textAlign: 'center', paddingTop: 60 } },
-        h('div', { style: { fontSize: '2rem', marginBottom: 12 } }, '🎮'),
-        h('p', { style: { fontWeight: 600, marginBottom: 8 } }, 'Select a subject first'),
-        h('button', { className: 'btn btn-primary', onClick: () => setTab('subjects') }, 'Go to Subjects')
-      );
-      return h(GamesScreen, { key: 'games2', subject: active, materials, lang, level, onBack: () => setTab('subjects') });
-    }
+    if (tab === 'lesson' && active) return h(ChatScreen, { key: 'lesson2', subject: active, materials, lang, level, mode: 'lesson', user, onBack: () => setTab('subjects') });
+    if (tab === 'dual'   && active) return h(DualScreen, { key: 'dual2',   subject: active, materials, lang, level, user, onBack: () => setTab('subjects') });
+    if (tab === 'games'  && active) return h(GamesScreen, { key: 'games2', subject: active, materials, lang, level, onBack: () => setTab('subjects') });
 
     if (tab === 'profile') return h(ProfileScreen, {
       user, xp, lessonCount, correctCount, lang,
@@ -964,76 +943,7 @@ function App() {
       user,
       onSave: (s) => { setSubjects(prev => [...prev, s]); setShowNew(false); openSubject(s); },
       onClose: () => setShowNew(false)
-    }),
-
-    // Mobile notes FAB
-    h('button', {
-      className: 'mob-fab',
-      id: 'mob-notes-fab',
-      style: { display: 'none', right: 14, bottom: 78 },
-      onClick: () => {
-        const pan = document.getElementById('mob-notes-pan');
-        const ov  = document.getElementById('mob-notes-ov');
-        if (pan) pan.style.left = '0';
-        if (ov)  ov.style.display = 'block';
-      }
-    }, '📝'),
-
-    // Mobile notes overlay
-    h('div', {
-      id: 'mob-notes-ov',
-      onClick: () => {
-        document.getElementById('mob-notes-pan').style.left = '-420px';
-        document.getElementById('mob-notes-ov').style.display = 'none';
-      },
-      style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,.35)', zIndex: 299, display: 'none' }
-    }),
-
-    // Mobile notes panel
-    h('div', {
-      id: 'mob-notes-pan',
-      style: { position: 'fixed', top: 0, left: '-420px', width: 'min(360px,92vw)', height: '100%', background: '#fff', zIndex: 300, display: 'flex', flexDirection: 'column', boxShadow: '4px 0 20px rgba(0,0,0,.12)', borderRight: '3px solid var(--c-primary)', transition: 'left .25s' }
-    },
-      h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 15px', background: '#f5f3ff', borderBottom: '1px solid var(--c-border)', flexShrink: 0 } },
-        h('strong', { style: { fontSize: '.9rem' } }, '📝 Notes'),
-        h('button', {
-          style: { background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--c-muted)' },
-          onClick: () => {
-            document.getElementById('mob-notes-pan').style.left = '-420px';
-            document.getElementById('mob-notes-ov').style.display = 'none';
-          }
-        }, '✕')
-      ),
-      h('textarea', {
-        id: 'mob-notes-ta',
-        style: { flex: 1, margin: 12, border: '1.5px solid var(--c-border)', borderRadius: 9, padding: 11, fontSize: '.875rem', fontFamily: 'var(--font)', resize: 'none', outline: 'none', lineHeight: 1.6 },
-        placeholder: 'Write your notes here...',
-        onChange: e => { try { localStorage.setItem('lx_notes', e.target.value); } catch {} }
-      }),
-      h('div', { style: { display: 'flex', gap: 8, padding: '0 12px 16px' } },
-        h('button', {
-          className: 'btn btn-ghost btn-sm btn-full',
-          style: { color: 'var(--c-primary)' },
-          onClick: () => {
-            const v = document.getElementById('mob-notes-ta')?.value || '';
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(new Blob([v], { type: 'text/plain' }));
-            a.download = 'notes.txt'; a.click();
-          }
-        }, 'Download'),
-        h('button', {
-          className: 'btn btn-ghost btn-sm btn-full',
-          style: { color: 'var(--c-danger)' },
-          onClick: () => {
-            if (confirm('Clear notes?')) {
-              const ta = document.getElementById('mob-notes-ta');
-              if (ta) ta.value = '';
-              localStorage.removeItem('lx_notes');
-            }
-          }
-        }, 'Clear')
-      )
-    )
+    })
   );
 }
 
