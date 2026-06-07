@@ -4,7 +4,7 @@
 
 // ── Supabase ──────────────────────────────
 const SUPABASE_URL = 'https://jmsaceushtshgqulreyu.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impmc2FjZXVzaHRzaGdxdWxyZXl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2OTgxOTQsImV4cCI6MjA1OTI3NDE5NH0.N4DrM2i6p0l0mO5g5dP1VpKrX7MhwHTVWqUl52JqO_0';
+const SUPABASE_KEY = 'sb_publishable_DCO2buENQ1j__8cN32TVTQ_miaroN4l';
 
 let _supa = null;
 function getSupa() {
