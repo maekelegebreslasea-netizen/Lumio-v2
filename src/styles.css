@@ -534,6 +534,11 @@ textarea.input { resize: none; line-height: 1.6; }
   justify-content: center;
   min-height: 100vh;
   padding: 24px 24px 40px;
+  width: 100%;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--c-bg);
+  z-index: 10;
 }
 
 .auth-logo {
@@ -941,7 +946,7 @@ textarea.input { resize: none; line-height: 1.6; }
 .mob-fab {
   position: fixed;
   bottom: 78px;
-  right: 66px;
+  right: 14px;
   width: 44px;
   height: 44px;
   border-radius: 50%;
