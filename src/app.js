@@ -803,18 +803,28 @@ function App() {
   const [correctCount, setCorrectCount] = useState(() => S.get('lx_cc', 0));
   const [materials, setMaterials] = useState([]);
 
-  // Auth
+  // Auth — wait for Supabase to be ready
   useEffect(() => {
-    const supa = getSupa();
-    if (!supa) { setAuthLoad(false); return; }
-    supa.auth.getSession().then(({ data }) => {
-      setUser(data?.session?.user || null);
-      setAuthLoad(false);
-    });
-    const { data: { subscription } } = supa.auth.onAuthStateChange((_, session) => {
-      setUser(session?.user || null);
-    });
-    return () => subscription.unsubscribe();
+    let cancelled = false;
+    const tryInit = (attempts = 0) => {
+      const supa = getSupa();
+      if (!supa) {
+        if (attempts > 20) { setAuthLoad(false); return; } // give up after 2s
+        setTimeout(() => tryInit(attempts + 1), 100);
+        return;
+      }
+      supa.auth.getSession().then(({ data }) => {
+        if (cancelled) return;
+        setUser(data?.session?.user || null);
+        setAuthLoad(false);
+      }).catch(() => { if (!cancelled) setAuthLoad(false); });
+      const { data: { subscription } } = supa.auth.onAuthStateChange((_, session) => {
+        if (!cancelled) setUser(session?.user || null);
+      });
+      return () => { cancelled = true; subscription.unsubscribe(); };
+    };
+    const cleanup = tryInit();
+    return () => { cancelled = true; if (cleanup) cleanup(); };
   }, []);
 
   // Load subjects
