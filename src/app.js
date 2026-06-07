@@ -970,7 +970,7 @@ function App() {
     h('button', {
       className: 'mob-fab',
       id: 'mob-notes-fab',
-      style: { display: 'none' },
+      style: { display: 'none', right: 14, bottom: 78 },
       onClick: () => {
         const pan = document.getElementById('mob-notes-pan');
         const ov  = document.getElementById('mob-notes-ov');
