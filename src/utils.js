@@ -6,21 +6,16 @@
 const SUPABASE_URL = 'https://jmsaceushtshgqulreyu.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impmc2FjZXVzaHRzaGdxdWxyZXl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2OTgxOTQsImV4cCI6MjA1OTI3NDE5NH0.N4DrM2i6p0l0mO5g5dP1VpKrX7MhwHTVWqUl52JqO_0';
 
-// Supabase client
 let _supa = null;
 function getSupa() {
   if (_supa) return _supa;
-  try {
-    _supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true
-      }
-    });
-  } catch(e) { console.error('[Supabase]', e); }
+  _supa = window.supabase
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+    : null;
   return _supa;
 }
+
+// Supabase SDK loaded via index.html script tag
 
 // ── Storage (localStorage) ────────────────
 const S = {
@@ -42,7 +37,7 @@ async function callAI(system, messages, maxTokens = 800, tries = 3) {
         },
         body: JSON.stringify({ system, messages, maxTokens }),
       });
-      if (!res.ok) throw new Error(`API error ${res.status} — check Netlify functions are deployed`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       return data.text || '';
     } catch (e) {
