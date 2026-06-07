@@ -4,7 +4,7 @@
 
 // ── Supabase ──────────────────────────────
 const SUPABASE_URL = 'https://jmsaceushtshgqulreyu.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_DCO2buENQ1j__8cN32TVTQ_miaroN4l';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impmc2FjZXVzaHRzaGdxdWxyZXl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2OTgxOTQsImV4cCI6MjA1OTI3NDE5NH0.N4DrM2i6p0l0mO5g5dP1VpKrX7MhwHTVWqUl52JqO_0';
 
 let _supa = null;
 function getSupa() {
@@ -162,12 +162,25 @@ const db = {
   },
 
   async loadMaterials(subjectId) {
-    const r = await getSupa()?.from('materials').select('*').eq('subject_id', subjectId).order('created_at');
+    const supa = getSupa();
+    if (!supa) return [];
+    const user = (await supa.auth.getUser())?.data?.user;
+    if (!user) return [];
+    const r = await supa.from('materials').select('*')
+      .eq('subject_id', subjectId)
+      .eq('user_id', user.id)
+      .order('created_at');
+    if (r?.error) { console.error('[db] loadMaterials:', r.error.message); return []; }
     return r?.data || [];
   },
 
   async saveMaterial(data) {
-    const r = await getSupa()?.from('materials').upsert(data).select();
+    const supa = getSupa();
+    if (!supa) return null;
+    const user = (await supa.auth.getUser())?.data?.user;
+    if (!user) return null;
+    const r = await supa.from('materials').upsert({ ...data, user_id: user.id }).select();
+    if (r?.error) { console.error('[db] saveMaterial:', r.error.message); return null; }
     return r?.data?.[0];
   },
 
@@ -176,12 +189,17 @@ const db = {
   },
 
   async saveSession(key, userId, messages) {
-    await getSupa()?.from('sessions').upsert({ key, user_id: userId, messages: JSON.stringify(messages) });
+    try {
+      const r = await getSupa()?.from('sessions').upsert({ key, user_id: userId, messages: JSON.stringify(messages) });
+      if (r?.error) console.error('[db] saveSession:', r.error.message);
+    } catch(e) { console.error('[db] saveSession exception:', e.message); }
   },
 
   async loadSession(key, userId) {
-    const r = await getSupa()?.from('sessions').select('messages').eq('key', key).eq('user_id', userId).single();
-    try { return r?.data ? JSON.parse(r.data.messages) : null; } catch { return null; }
+    try {
+      const r = await getSupa()?.from('sessions').select('messages').eq('key', key).eq('user_id', userId).maybeSingle();
+      return r?.data ? JSON.parse(r.data.messages) : null;
+    } catch { return null; }
   },
 };
 
