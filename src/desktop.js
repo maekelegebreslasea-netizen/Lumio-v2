@@ -179,10 +179,10 @@ function buildSidebar() {
     </div>
   `;
 
-  // Insert into DOM
+  // Insert into DOM — left | root | right
   const root = document.getElementById('root');
   document.body.insertBefore(left, root);
-  document.body.appendChild(right);
+  root.insertAdjacentElement('afterend', right);
 
   // ── Bind all events via addEventListener (inga inline onclick) ──
   // Nav-knappar
