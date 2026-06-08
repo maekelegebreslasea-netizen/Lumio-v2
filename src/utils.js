@@ -154,12 +154,18 @@ MATERIALS:\n${getMaterialText(materials)}`,
 // ── DB helpers ────────────────────────────
 const db = {
   async loadSubjects(userId) {
-    const r = await getSupa()?.from('subjects').select('*').eq('user_id', userId).order('created_at');
+    const supa = getSupa();
+    if (!supa) { console.error('[db] loadSubjects: Supabase not ready'); return []; }
+    const r = await supa.from('subjects').select('*').eq('user_id', userId).order('created_at');
+    if (r?.error) { console.error('[db] loadSubjects error:', r.error.message); return []; }
     return r?.data || [];
   },
 
   async saveSubject(data) {
-    const r = await getSupa()?.from('subjects').upsert(data).select();
+    const supa = getSupa();
+    if (!supa) { console.error('[db] saveSubject: Supabase not ready'); return null; }
+    const r = await supa.from('subjects').upsert(data).select();
+    if (r?.error) { console.error('[db] saveSubject error:', r.error.message); return null; }
     return r?.data?.[0];
   },
 
