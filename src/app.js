@@ -337,12 +337,78 @@ function SubjectScreen({ subject, user, lang, onBack, onLesson, onDual, onChat, 
   );
 }
 
+
+// ── Voice Hook (mic input + TTS output) ──
+function useVoice(lang, onTranscript) {
+  const [listening, setListening] = React.useState(false);
+  const recRef = React.useRef(null);
+
+  const speak = React.useCallback((text) => {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    // Strip markdown
+    const clean = text.replace(/\*\*(.*?)\*\*/g, '$1').replace(/#+\s/g, '').slice(0, 500);
+    const utt = new SpeechSynthesisUtterance(clean);
+    // Pick voice by language
+    const voices = window.speechSynthesis.getVoices();
+    const langMap = {
+      'Svenska': 'sv', 'German': 'de', 'Norwegian': 'no', 'French': 'fr',
+      'Spanish': 'es', 'Portuguese': 'pt', 'Russian': 'ru', 'Japanese': 'ja',
+      'Arabic': 'ar', 'Mandarin': 'zh', 'English': 'en'
+    };
+    const code = langMap[lang] || 'en';
+    const match = voices.find(v => v.lang.startsWith(code));
+    if (match) utt.voice = match;
+    utt.rate = 0.95;
+    utt.pitch = 1;
+    window.speechSynthesis.speak(utt);
+  }, [lang]);
+
+  const stopSpeaking = React.useCallback(() => {
+    window.speechSynthesis?.cancel();
+  }, []);
+
+  const startMic = React.useCallback(() => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { alert('Din webbläsare stöder inte mikrofon-input. Prova Chrome.'); return; }
+    const rec = new SR();
+    recRef.current = rec;
+    const langMap = {
+      'Svenska': 'sv-SE', 'German': 'de-DE', 'Norwegian': 'no-NO', 'French': 'fr-FR',
+      'Spanish': 'es-ES', 'Portuguese': 'pt-PT', 'Russian': 'ru-RU', 'Japanese': 'ja-JP',
+      'Arabic': 'ar-SA', 'Mandarin': 'zh-CN', 'English': 'en-US'
+    };
+    rec.lang = langMap[lang] || 'en-US';
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    rec.onstart  = () => setListening(true);
+    rec.onend    = () => setListening(false);
+    rec.onerror  = () => setListening(false);
+    rec.onresult = (e) => {
+      const transcript = e.results[0][0].transcript;
+      if (transcript) onTranscript(transcript);
+    };
+    rec.start();
+  }, [lang, onTranscript]);
+
+  const stopMic = React.useCallback(() => {
+    recRef.current?.stop();
+    setListening(false);
+  }, []);
+
+  return { listening, startMic, stopMic, speak, stopSpeaking };
+}
+
 // ── Chat screen (shared for Lesson, Chat) ─
 function ChatScreen({ subject, materials, lang, level, mode, user, onBack }) {
-  const [msgs, setMsgs]     = useState([]);
-  const [input, setInput]   = useState('');
+  const [msgs, setMsgs]       = useState([]);
+  const [input, setInput]     = useState('');
   const [loading, setLoading] = useState(false);
+  const [ttsOn, setTtsOn]     = useState(true);
   const bottomRef = useRef(null);
+
+  const onTranscript = React.useCallback((text) => setInput(text), []);
+  const { listening, startMic, stopMic, speak, stopSpeaking } = useVoice(lang, onTranscript);
 
   const systemPrompt = () => {
     if (mode === 'lesson') return PROMPTS.lesson(subject.name, materials, level, lang);
@@ -382,6 +448,7 @@ function ChatScreen({ subject, materials, lang, level, mode, user, onBack }) {
       const aiMsg = { role: 'assistant', id: uid(), text: reply };
       const updated = [...newMsgs, aiMsg];
       setMsgs(updated);
+      if (ttsOn) speak(reply);
       await db.saveSession(mode + '_' + subject.id, user.id, updated.slice(-20));
     } catch (e) {
       setMsgs(prev => [...prev, { role: 'assistant', id: uid(), text: 'Connection error. Please try again.' }]);
@@ -411,6 +478,12 @@ function ChatScreen({ subject, materials, lang, level, mode, user, onBack }) {
       chips.map(c => h('button', { key: c, className: 'chip', style: { whiteSpace: 'nowrap' }, onClick: () => setInput(c) }, c))
     ),
     h('div', { className: 'chat-input-row' },
+      h('button', {
+        className: 'mic-btn' + (listening ? ' active' : ''),
+        onClick: listening ? stopMic : startMic,
+        title: listening ? 'Stop mic' : 'Start mic',
+        style: { background: listening ? '#ef4444' : 'var(--c-surface)', border: '1px solid var(--c-border)', borderRadius: 10, padding: '8px 10px', cursor: 'pointer', flexShrink: 0 }
+      }, listening ? '🔴' : '🎤'),
       h('textarea', {
         className: 'chat-input',
         rows: 1,
@@ -419,6 +492,11 @@ function ChatScreen({ subject, materials, lang, level, mode, user, onBack }) {
         onChange: e => setInput(e.target.value),
         onKeyDown: e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())
       }),
+      h('button', {
+        onClick: () => { setTtsOn(v => !v); if (ttsOn) stopSpeaking(); },
+        title: ttsOn ? 'Stäng av röst' : 'Sätt på röst',
+        style: { background: ttsOn ? 'var(--c-primary)' : 'var(--c-surface)', border: '1px solid var(--c-border)', borderRadius: 10, padding: '8px 10px', cursor: 'pointer', flexShrink: 0, color: ttsOn ? '#fff' : 'var(--c-muted)' }
+      }, '🔊'),
       h('button', { className: 'send-btn', onClick: send, disabled: !input.trim() || loading },
         h(Icon, { name: 'chevron', size: 18, color: '#fff' })
       )
@@ -428,9 +506,12 @@ function ChatScreen({ subject, materials, lang, level, mode, user, onBack }) {
 
 // ── Dual AI screen ────────────────────────
 function DualScreen({ subject, materials, lang, level, user, onBack }) {
-  const [msgs, setMsgs]   = useState([]);
-  const [input, setInput] = useState('');
+  const [msgs, setMsgs]       = useState([]);
+  const [input, setInput]     = useState('');
   const [loading, setLoading] = useState(null); // 'atlas'|'spark'|null
+  const [ttsOn, setTtsOn]     = useState(true);
+  const onTranscript = React.useCallback((text) => setInput(text), []);
+  const { listening, startMic, stopMic, speak, stopSpeaking } = useVoice(lang, onTranscript);
 
   useEffect(() => {
     const welcome = { role: 'atlas', id: uid(), text: `Hi! I'm **Atlas**, your structured tutor. Let's explore **${subject.name}** together. What topic shall we start with?` };
@@ -459,6 +540,7 @@ function DualScreen({ subject, materials, lang, level, user, onBack }) {
     try {
       const reply = await callAI(sys, history, 500);
       setMsgs(prev => [...prev, { role: next, id: uid(), text: reply }]);
+      if (ttsOn) speak(reply);
     } catch {
       setMsgs(prev => [...prev, { role: next, id: uid(), text: 'Connection error. Try again.' }]);
     } finally { setLoading(null); }
@@ -487,6 +569,11 @@ function DualScreen({ subject, materials, lang, level, user, onBack }) {
       h('div', { ref: bottomRef })
     ),
     h('div', { className: 'chat-input-row' },
+      h('button', {
+        onClick: listening ? stopMic : startMic,
+        title: listening ? 'Stop' : 'Mic',
+        style: { background: listening ? '#ef4444' : 'var(--c-surface)', border: '1px solid var(--c-border)', borderRadius: 10, padding: '8px 10px', cursor: 'pointer', flexShrink: 0 }
+      }, listening ? '🔴' : '🎤'),
       h('textarea', {
         className: 'chat-input',
         rows: 1,
@@ -495,6 +582,10 @@ function DualScreen({ subject, materials, lang, level, user, onBack }) {
         onChange: e => setInput(e.target.value),
         onKeyDown: e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())
       }),
+      h('button', {
+        onClick: () => { setTtsOn(v => !v); if (ttsOn) stopSpeaking(); },
+        style: { background: ttsOn ? 'var(--c-primary)' : 'var(--c-surface)', border: '1px solid var(--c-border)', borderRadius: 10, padding: '8px 10px', cursor: 'pointer', flexShrink: 0, color: ttsOn ? '#fff' : 'var(--c-muted)' }
+      }, '🔊'),
       h('button', { className: 'send-btn', onClick: send, disabled: !input.trim() || !!loading },
         h(Icon, { name: 'chevron', size: 18, color: '#fff' })
       )
