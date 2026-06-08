@@ -128,11 +128,22 @@ async function vcStart() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ subject: subjName, lang: _vc.lang }),
     });
-    const sessData = await sessRes.json();
 
-    if (!sessData.ephemeral_key) {
-      vcStatus('Session error: ' + (sessData.error || 'unknown'));
-      console.error('[Voice]', sessData);
+    // Safe JSON parse — Netlify can return HTML on 404
+    const rawText = await sessRes.text();
+    let sessData;
+    try { sessData = JSON.parse(rawText); }
+    catch(e) {
+      vcStatus('Server error — check Netlify functions');
+      console.error('[Voice] Non-JSON response:', rawText.slice(0, 200));
+      _vc.on = false;
+      return;
+    }
+
+    if (!sessRes.ok || !sessData.ephemeral_key) {
+      vcStatus('Session error: ' + (sessData.error || sessData.detail || 'HTTP ' + sessRes.status));
+      console.error('[Voice] Session error:', sessData);
+      _vc.on = false;
       return;
     }
 
