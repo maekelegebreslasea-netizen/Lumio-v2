@@ -541,6 +541,11 @@ textarea.input { resize: none; line-height: 1.6; }
   justify-content: center;
   min-height: 100vh;
   padding: 24px 24px 40px;
+  position: fixed;
+  inset: 0;
+  background: var(--c-bg);
+  z-index: 999;
+  width: 100%;
 }
 
 .auth-logo {
