@@ -7,19 +7,18 @@ let _noteKey = 'lx_notes_default';
 // ── Resize handler ────────────────────────
 function onResize() {
   const isDesktop = window.innerWidth >= 1024;
-  const left  = document.getElementById('lx-sidebar-left');
-  const right = document.getElementById('lx-sidebar-right');
-  if (left)  left.style.display  = isDesktop ? 'flex' : 'none';
-  if (right) right.style.display = isDesktop ? 'flex' : 'none';
+  ['lx-sidebar-left', 'lx-sidebar-right'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = isDesktop ? 'flex' : 'none';
+  });
 }
 
 // ── Nav ───────────────────────────────────
 function lxNav(tab) {
-  const tabs = ['subjects','lesson','dual','games','profile'];
-  tabs.forEach((t, i) => {
+  for (let i = 0; i < 5; i++) {
     const b = document.getElementById('lx-nb-' + i);
-    if (b) b.classList.toggle('on', t === tab);
-  });
+    if (b) b.classList.toggle('on', i === ['subjects','lesson','dual','games','profile'].indexOf(tab));
+  }
   document.dispatchEvent(new CustomEvent('lx-nav', { detail: tab }));
 }
 
@@ -34,7 +33,10 @@ function lxSyncSubjects() {
     return;
   }
 
+  // Only rebuild if count changed
+  if (list.children.length === cards.length) return;
   list.innerHTML = '';
+
   cards.forEach((card, i) => {
     const name  = card.dataset.sname || 'Subject ' + (i + 1);
     const emoji = card.querySelector('[style*="font-size"]')?.textContent?.trim()?.slice(0, 2) || '📚';
@@ -101,7 +103,7 @@ function lxNoteClose() {
 
 // ── Build sidebar HTML ────────────────────
 function buildSidebar() {
-  // Left sidebar — använd addEventListener istället för inline onclick
+  // Left sidebar
   const left = document.createElement('div');
   left.id = 'lx-sidebar-left';
   left.className = 'sidebar-left';
@@ -138,7 +140,7 @@ function buildSidebar() {
         Profile
       </button>
       <div class="sl-divider"></div>
-      <button id="lx-nb-call" class="sl-btn call">
+      <button class="sl-btn call" onclick="vcStart()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
         Call Luxori
       </button>
@@ -146,7 +148,7 @@ function buildSidebar() {
     <div class="sl-subj-list">
       <div class="sl-subj-hd">
         <span class="sl-subj-lbl">My Subjects</span>
-        <button id="lx-nb-newsub" class="sl-add">+</button>
+        <button class="sl-add" onclick="document.dispatchEvent(new CustomEvent('lx-newsub'))">+</button>
       </div>
       <div id="lx-subj-list"><div class="sl-empty">No subjects yet</div></div>
     </div>
@@ -158,61 +160,42 @@ function buildSidebar() {
   right.className = 'sidebar-right';
   right.style.display = 'none';
   right.innerHTML = `
-    <button id="lx-note-tab" class="sr-tab">
+    <button class="sr-tab" onclick="lxNoteOpen()">
       <div class="sr-vert">NOTES</div>
     </button>
     <div class="sr-panel">
       <div class="sr-hd">
         <span class="sr-title" id="lx-note-title">Notes</span>
-        <button id="lx-note-close" class="sr-close">✕</button>
+        <button class="sr-close" onclick="lxNoteClose()">✕</button>
       </div>
       <div class="sr-body">
-        <textarea class="sr-ta" id="lx-note-ta" placeholder="Write your notes here...&#10;&#10;• Key concepts&#10;• Definitions&#10;• Questions to ask"></textarea>
+        <textarea class="sr-ta" id="lx-note-ta" placeholder="Write your notes here...&#10;&#10;• Key concepts&#10;• Definitions&#10;• Questions to ask" oninput="lxNoteSave()"></textarea>
         <div class="sr-foot">
           <span class="sr-saved" id="lx-note-saved">Start writing...</span>
           <div class="sr-btns">
-            <button id="lx-note-dl" style="color:var(--c-primary)">Download</button>
-            <button id="lx-note-cl" style="color:var(--c-danger)">Clear</button>
+            <button style="color:var(--c-primary)" onclick="lxNoteDownload()">Download</button>
+            <button style="color:var(--c-danger)" onclick="lxNoteClear()">Clear</button>
           </div>
         </div>
       </div>
     </div>
   `;
 
-  // Insert into DOM — left | root | right
+  // Insert into DOM before #root
   const root = document.getElementById('root');
   document.body.insertBefore(left, root);
-  root.insertAdjacentElement('afterend', right);
-
-  // ── Bind all events via addEventListener (inga inline onclick) ──
-  // Nav-knappar
-  left.querySelectorAll('[data-nav]').forEach(btn => {
-    btn.addEventListener('click', () => lxNav(btn.dataset.nav));
-  });
-
-  // Call Luxori
-  document.getElementById('lx-nb-call')?.addEventListener('click', () => {
-    if (typeof vcStart === 'function') vcStart();
-  });
-
-  // Ny subject
-  document.getElementById('lx-nb-newsub')?.addEventListener('click', () => {
-    document.dispatchEvent(new CustomEvent('lx-newsub'));
-  });
-
-  // Notes
-  document.getElementById('lx-note-ta')?.addEventListener('input', lxNoteSave);
-  document.getElementById('lx-note-tab')?.addEventListener('click', lxNoteOpen);
-  document.getElementById('lx-note-close')?.addEventListener('click', lxNoteClose);
-  document.getElementById('lx-note-dl')?.addEventListener('click', lxNoteDownload);
-  document.getElementById('lx-note-cl')?.addEventListener('click', lxNoteClear);
+  document.body.appendChild(right);
 }
 
 // ── Init ──────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  buildSidebar();           // Bygg sidebar FÖRST
-  onResize();               // Visa/dölj baserat på skärmbredd
+  buildSidebar();
+  // Bind nav buttons via addEventListener (not inline onclick)
+  document.querySelectorAll('[data-nav]').forEach(btn => {
+    btn.addEventListener('click', () => lxNav(btn.dataset.nav));
+  });
+  onResize();
   window.addEventListener('resize', onResize);
-  setTimeout(lxNoteLoad, 300);
+  setTimeout(lxNoteLoad, 500);
   setInterval(lxSyncSubjects, 900);
 });
