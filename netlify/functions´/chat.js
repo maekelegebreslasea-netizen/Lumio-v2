@@ -2,7 +2,7 @@
 // Lumio AI proxy — all Claude calls go through here
 // Students never see or need an API key
 
-const MODEL = "claude-haiku-4-5-20251001";
+const MODEL = "claude-haiku-4-5";
 const FREE_LIMIT = 50; // messages per day on free plan
 
 exports.handler = async (event) => {
