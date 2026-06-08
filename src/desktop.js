@@ -7,10 +7,10 @@ let _noteKey = 'lx_notes_default';
 // ── Resize handler ────────────────────────
 function onResize() {
   const isDesktop = window.innerWidth >= 1024;
-  ['lx-sidebar-left', 'lx-sidebar-right'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = isDesktop ? 'flex' : 'none';
-  });
+  const left  = document.getElementById('lx-sidebar-left');
+  const right = document.getElementById('lx-sidebar-right');
+  if (left)  left.style.display  = isDesktop ? 'flex' : 'none';
+  if (right) right.style.display = isDesktop ? 'flex' : 'none';
 }
 
 // ── Nav ───────────────────────────────────
@@ -181,10 +181,10 @@ function buildSidebar() {
     </div>
   `;
 
-  // Insert into DOM before #root
+  // Insert into DOM: left | root | right
   const root = document.getElementById('root');
   document.body.insertBefore(left, root);
-  document.body.appendChild(right);
+  root.insertAdjacentElement('afterend', right);
 }
 
 // ── Init ──────────────────────────────────
