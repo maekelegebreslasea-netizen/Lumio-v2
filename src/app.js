@@ -602,9 +602,9 @@ function GamesScreen({ subject, materials, lang, level, onBack }) {
   if (game === 'exam')   return h(ExamGame,   { subject, materials, lang, level, onBack: () => setGame(null) });
 
   const games = [
-    { id: 'flash', icon: '🃏', label: 'Flashcards', desc: 'Flip cards to learn key concepts', color: '#eef2ff' },
-    { id: 'speed', icon: '⚡', label: 'Speed Quiz',  desc: '10 questions — how fast can you go?', color: '#fdf4ff' },
-    { id: 'exam',  icon: '📝', label: 'Exam Prep',   desc: 'Full exam with explanations', color: '#f0fdf4' },
+    { id: 'flash', icon: '🃏', label: t(lang,'flashcards'), desc: t(lang,'flashDesc'), color: '#eef2ff' },
+    { id: 'speed', icon: '⚡', label: t(lang,'speedQuiz'),  desc: t(lang,'speedDesc'), color: '#fdf4ff' },
+    { id: 'exam',  icon: '📝', label: t(lang,'examPrep'),   desc: t(lang,'examDesc'),  color: '#f0fdf4' },
   ];
 
   return h('div', null,
@@ -831,7 +831,7 @@ function ExamGame({ subject, materials, lang, level, onBack }) {
   return h('div', null,
     h('div', { className: 'topbar' },
       h('button', { className: 'back-btn', onClick: onBack }, h(Icon, { name: 'chevron', size: 16 }), ' Back'),
-      h('span', { className: 'topbar-title' }, 'Exam Prep')
+      h('span', { className: 'topbar-title' }, t(lang,'examPrep'))
     ),
     h('div', { className: 'page' },
       done && h('div', { className: 'score-banner' },
@@ -897,9 +897,9 @@ function ProfileScreen({ user, xp, lessonCount, correctCount, lang, onLangChange
       )
     ),
     h('div', { className: 'stat-grid' },
-      h('div', { className: 'stat-card' }, h('div', { className: 'stat-num' }, xp), h('div', { className: 'stat-lbl' }, 'Total XP')),
-      h('div', { className: 'stat-card' }, h('div', { className: 'stat-num' }, lessonCount), h('div', { className: 'stat-lbl' }, 'Lessons')),
-      h('div', { className: 'stat-card' }, h('div', { className: 'stat-num' }, correctCount), h('div', { className: 'stat-lbl' }, 'Correct'))
+      h('div', { className: 'stat-card' }, h('div', { className: 'stat-num' }, xp), h('div', { className: 'stat-lbl' }, ui('totalXP'))),
+      h('div', { className: 'stat-card' }, h('div', { className: 'stat-num' }, lessonCount), h('div', { className: 'stat-lbl' }, ui('lessons'))),
+      h('div', { className: 'stat-card' }, h('div', { className: 'stat-num' }, correctCount), h('div', { className: 'stat-lbl' }, ui('correct')))
     ),
     h('div', { className: 'divider' }),
     h('div', { style: { marginBottom: 16 } },
