@@ -308,13 +308,12 @@ textarea.input { resize: none; line-height: 1.6; }
   display: flex;
   flex-direction: column;
   height: calc(100vh - 56px - var(--nav-h));
-  flex: 1;
-  min-height: 0;
 }
 
 @media (min-width: 1024px) {
   .chat-wrap {
     height: 100vh;
+    flex: 1;
   }
 }
 
@@ -683,9 +682,18 @@ textarea.input { resize: none; line-height: 1.6; }
 
 /* ── Desktop layout ──────────────────────── */
 @media (min-width: 1024px) {
-  body { background: #f3f4f6; }
+  body {
+    background: #f3f4f6;
+    display: flex;
+    min-height: 100vh;
+    align-items: stretch;
+  }
 
-  #root { display: flex; }
+  #root {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+  }
 
   .sidebar-left {
     width: 240px;
@@ -717,11 +725,10 @@ textarea.input { resize: none; line-height: 1.6; }
   .sidebar-right.open { width: 280px; }
 
   .app {
-    max-width: none;
     flex: 1;
+    min-width: 0;
     border-left: 1px solid var(--c-border);
     border-right: 1px solid var(--c-border);
-    max-width: 680px;
   }
 
   .nav {
