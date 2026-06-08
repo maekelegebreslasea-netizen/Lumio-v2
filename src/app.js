@@ -1,4 +1,39 @@
 // ─────────────────────────────────────────
+
+// ── UI Translations ───────────────────────
+const LANGS = [
+  { code: 'English',    flag: '🇬🇧', label: 'English' },
+  { code: 'Svenska',    flag: '🇸🇪', label: 'Svenska' },
+  { code: 'Mandarin',   flag: '🇨🇳', label: '普通话' },
+  { code: 'Spanish',    flag: '🇪🇸', label: 'Español' },
+  { code: 'Arabic',     flag: '🇸🇦', label: 'العربية' },
+  { code: 'Portuguese', flag: '🇵🇹', label: 'Português' },
+  { code: 'Russian',    flag: '🇷🇺', label: 'Русский' },
+  { code: 'Japanese',   flag: '🇯🇵', label: '日本語' },
+  { code: 'French',     flag: '🇫🇷', label: 'Français' },
+  { code: 'German',     flag: '🇩🇪', label: 'Deutsch' },
+  { code: 'Norwegian',  flag: '🇳🇴', label: 'Norsk' },
+];
+
+const T = {
+  English:    { signIn:'Sign in', signUp:'Sign up', email:'Email', password:'Password', noAccount:"Don't have an account?", haveAccount:'Already have an account?', home:'Home', lesson:'Lesson', dual:'Dual AI', games:'Games', profile:'Profile', call:'Call Luxori', mySubjects:'My Subjects', noSubjects:'No subjects yet', addSubject:'New Subject', upload:'Upload', addText:'+ Add text', uploadMaterial:'Upload material to unlock study modes', materials:'Materials', studyModes:'Study Modes', back:'Back', language:'Language', signOut:'Sign out', totalXP:'Total XP', lessons:'Lessons', correct:'Correct', lessonDesc:'AI tutor explains step by step', dualDesc:'Atlas explains, Spark challenges', chatDesc:'Ask anything from your material', gamesDesc:'Flashcards, quizzes and more', notes:'Notes', startWriting:'Start writing...', download:'Download', clear:'Clear', subjectName:'Subject name', emoji:'Emoji', color:'Color', save:'Save', cancel:'Cancel', generating:'Generating...', connectionError:'Connection error. Try again.', hi:"Hi! I'm Luxori, your tutor for", whatLearn:'What would you like to learn today?', explainMore:'Explain this more', giveExample:'Give an example', simpler:'Simpler please', keyPoint:"What's the key point?", flashcards:'Flashcards', speedQuiz:'Speed Quiz', examPrep:'Exam Prep', flashDesc:'Quick memory practice', speedDesc:'10 questions, beat the clock', examDesc:'Full exam simulation' },
+  Svenska:    { signIn:'Logga in', signUp:'Registrera dig', email:'E-post', password:'Lösenord', noAccount:'Har du inget konto?', haveAccount:'Har du redan ett konto?', home:'Hem', lesson:'Lektion', dual:'Dubbel AI', games:'Spel', profile:'Profil', call:'Ring Luxori', mySubjects:'Mina ämnen', noSubjects:'Inga ämnen ännu', addSubject:'Nytt ämne', upload:'Ladda upp', addText:'+ Lägg till text', uploadMaterial:'Ladda upp material för att låsa upp studielägen', materials:'Material', studyModes:'Studielägen', back:'Tillbaka', language:'Språk', signOut:'Logga ut', totalXP:'Total XP', lessons:'Lektioner', correct:'Rätt svar', lessonDesc:'AI-lärare förklarar steg för steg', dualDesc:'Atlas förklarar, Spark utmanar', chatDesc:'Fråga vad som helst från ditt material', gamesDesc:'Flashcards, quiz och mer', notes:'Anteckningar', startWriting:'Börja skriva...', download:'Ladda ner', clear:'Rensa', subjectName:'Ämnesnamn', emoji:'Emoji', color:'Färg', save:'Spara', cancel:'Avbryt', generating:'Genererar...', connectionError:'Anslutningsfel. Försök igen.', hi:'Hej! Jag är Luxori, din lärare för', whatLearn:'Vad vill du lära dig idag?', explainMore:'Förklara mer', giveExample:'Ge ett exempel', simpler:'Enklare tack', keyPoint:'Vad är huvudpoängen?', flashcards:'Flashcards', speedQuiz:'Snabbquiz', examPrep:'Tentaförberedelse', flashDesc:'Snabb minnesträning', speedDesc:'10 frågor, slå klockan', examDesc:'Full tentasimulering' },
+  German:     { signIn:'Anmelden', signUp:'Registrieren', email:'E-Mail', password:'Passwort', noAccount:'Kein Konto?', haveAccount:'Bereits ein Konto?', home:'Startseite', lesson:'Lektion', dual:'Dual KI', games:'Spiele', profile:'Profil', call:'Luxori anrufen', mySubjects:'Meine Fächer', noSubjects:'Noch keine Fächer', addSubject:'Neues Fach', upload:'Hochladen', addText:'+ Text hinzufügen', uploadMaterial:'Material hochladen um Lernmodi freizuschalten', materials:'Materialien', studyModes:'Lernmodi', back:'Zurück', language:'Sprache', signOut:'Abmelden', totalXP:'Gesamt XP', lessons:'Lektionen', correct:'Richtig', lessonDesc:'KI-Lehrer erklärt Schritt für Schritt', dualDesc:'Atlas erklärt, Spark fordert heraus', chatDesc:'Frag alles aus deinem Material', gamesDesc:'Karteikarten, Quiz und mehr', notes:'Notizen', startWriting:'Schreiben beginnen...', download:'Herunterladen', clear:'Löschen', subjectName:'Fachname', emoji:'Emoji', color:'Farbe', save:'Speichern', cancel:'Abbrechen', generating:'Generiert...', connectionError:'Verbindungsfehler. Erneut versuchen.', hi:'Hallo! Ich bin Luxori, dein Tutor für', whatLearn:'Was möchtest du heute lernen?', explainMore:'Mehr erklären', giveExample:'Beispiel geben', simpler:'Einfacher bitte', keyPoint:'Was ist der Kernpunkt?', flashcards:'Karteikarten', speedQuiz:'Schnellquiz', examPrep:'Prüfungsvorbereitung', flashDesc:'Schnelles Gedächtnistraining', speedDesc:'10 Fragen, schlag die Uhr', examDesc:'Volle Prüfungssimulation' },
+  Norwegian:  { signIn:'Logg inn', signUp:'Registrer deg', email:'E-post', password:'Passord', noAccount:'Har du ikke konto?', haveAccount:'Har du allerede konto?', home:'Hjem', lesson:'Leksjon', dual:'Dual AI', games:'Spill', profile:'Profil', call:'Ring Luxori', mySubjects:'Mine fag', noSubjects:'Ingen fag ennå', addSubject:'Nytt fag', upload:'Last opp', addText:'+ Legg til tekst', uploadMaterial:'Last opp materiale for å låse opp studiemodus', materials:'Materialer', studyModes:'Studiemodi', back:'Tilbake', language:'Språk', signOut:'Logg ut', totalXP:'Total XP', lessons:'Leksjoner', correct:'Riktig', lessonDesc:'AI-lærer forklarer steg for steg', dualDesc:'Atlas forklarer, Spark utfordrer', chatDesc:'Spør om hva som helst fra materialet', gamesDesc:'Flashkort, quiz og mer', notes:'Notater', startWriting:'Begynn å skrive...', download:'Last ned', clear:'Tøm', subjectName:'Fagnavn', emoji:'Emoji', color:'Farge', save:'Lagre', cancel:'Avbryt', generating:'Genererer...', connectionError:'Tilkoblingsfeil. Prøv igjen.', hi:'Hei! Jeg er Luxori, læreren din for', whatLearn:'Hva vil du lære i dag?', explainMore:'Forklar mer', giveExample:'Gi et eksempel', simpler:'Enklere takk', keyPoint:'Hva er hovedpoenget?', flashcards:'Flashkort', speedQuiz:'Hurtigquiz', examPrep:'Eksamensforberedelse', flashDesc:'Rask hukommelsesøving', speedDesc:'10 spørsmål, slå klokken', examDesc:'Full eksamensimulering' },
+  French:     { signIn:'Se connecter', signUp:"S'inscrire", email:'E-mail', password:'Mot de passe', noAccount:'Pas de compte?', haveAccount:'Déjà un compte?', home:'Accueil', lesson:'Leçon', dual:'IA Dual', games:'Jeux', profile:'Profil', call:'Appeler Luxori', mySubjects:'Mes matières', noSubjects:'Aucune matière', addSubject:'Nouvelle matière', upload:'Télécharger', addText:'+ Ajouter texte', uploadMaterial:'Téléchargez du matériel pour débloquer les modes', materials:'Matériaux', studyModes:"Modes d'étude", back:'Retour', language:'Langue', signOut:'Déconnexion', totalXP:'XP total', lessons:'Leçons', correct:'Correct', lessonDesc:"Tuteur IA explique étape par étape", dualDesc:'Atlas explique, Spark défie', chatDesc:'Posez des questions sur votre matériel', gamesDesc:'Flashcards, quiz et plus', notes:'Notes', startWriting:'Commencer à écrire...', download:'Télécharger', clear:'Effacer', subjectName:'Nom de la matière', emoji:'Emoji', color:'Couleur', save:'Enregistrer', cancel:'Annuler', generating:'Génération...', connectionError:'Erreur de connexion. Réessayez.', hi:'Bonjour! Je suis Luxori, votre tuteur pour', whatLearn:"Que voulez-vous apprendre aujourd'hui?", explainMore:'Expliquer davantage', giveExample:'Donner un exemple', simpler:'Plus simple svp', keyPoint:'Quel est le point clé?', flashcards:'Flashcards', speedQuiz:'Quiz rapide', examPrep:"Préparation à l'examen", flashDesc:'Pratique rapide de mémoire', speedDesc:'10 questions, battez le chrono', examDesc:"Simulation d'examen complète" },
+  Spanish:    { signIn:'Iniciar sesión', signUp:'Registrarse', email:'Correo', password:'Contraseña', noAccount:'¿No tienes cuenta?', haveAccount:'¿Ya tienes cuenta?', home:'Inicio', lesson:'Lección', dual:'IA Dual', games:'Juegos', profile:'Perfil', call:'Llamar a Luxori', mySubjects:'Mis materias', noSubjects:'Sin materias', addSubject:'Nueva materia', upload:'Subir', addText:'+ Añadir texto', uploadMaterial:'Sube material para desbloquear modos', materials:'Materiales', studyModes:'Modos de estudio', back:'Volver', language:'Idioma', signOut:'Cerrar sesión', totalXP:'XP total', lessons:'Lecciones', correct:'Correcto', lessonDesc:'Tutor IA explica paso a paso', dualDesc:'Atlas explica, Spark desafía', chatDesc:'Pregunta sobre tu material', gamesDesc:'Flashcards, quizzes y más', notes:'Notas', startWriting:'Empieza a escribir...', download:'Descargar', clear:'Limpiar', subjectName:'Nombre de materia', emoji:'Emoji', color:'Color', save:'Guardar', cancel:'Cancelar', generating:'Generando...', connectionError:'Error de conexión. Inténtalo de nuevo.', hi:'¡Hola! Soy Luxori, tu tutor de', whatLearn:'¿Qué quieres aprender hoy?', explainMore:'Explicar más', giveExample:'Dar un ejemplo', simpler:'Más simple por favor', keyPoint:'¿Cuál es el punto clave?', flashcards:'Tarjetas', speedQuiz:'Quiz rápido', examPrep:'Preparación examen', flashDesc:'Práctica rápida de memoria', speedDesc:'10 preguntas, gana el tiempo', examDesc:'Simulación de examen completa' },
+  Portuguese: { signIn:'Entrar', signUp:'Registrar', email:'E-mail', password:'Senha', noAccount:'Não tem conta?', haveAccount:'Já tem conta?', home:'Início', lesson:'Lição', dual:'IA Dual', games:'Jogos', profile:'Perfil', call:'Ligar para Luxori', mySubjects:'Minhas matérias', noSubjects:'Sem matérias', addSubject:'Nova matéria', upload:'Enviar', addText:'+ Adicionar texto', uploadMaterial:'Envie material para desbloquear modos', materials:'Materiais', studyModes:'Modos de estudo', back:'Voltar', language:'Idioma', signOut:'Sair', totalXP:'XP total', lessons:'Lições', correct:'Correto', lessonDesc:'Tutor IA explica passo a passo', dualDesc:'Atlas explica, Spark desafia', chatDesc:'Pergunte sobre seu material', gamesDesc:'Flashcards, quizzes e mais', notes:'Notas', startWriting:'Comece a escrever...', download:'Baixar', clear:'Limpar', subjectName:'Nome da matéria', emoji:'Emoji', color:'Cor', save:'Salvar', cancel:'Cancelar', generating:'Gerando...', connectionError:'Erro de conexão. Tente novamente.', hi:'Olá! Sou Luxori, seu tutor de', whatLearn:'O que você quer aprender hoje?', explainMore:'Explicar mais', giveExample:'Dar um exemplo', simpler:'Mais simples por favor', keyPoint:'Qual é o ponto principal?', flashcards:'Flashcards', speedQuiz:'Quiz rápido', examPrep:'Preparação para exame', flashDesc:'Prática rápida de memória', speedDesc:'10 perguntas, bata o relógio', examDesc:'Simulação de exame completa' },
+  Russian:    { signIn:'Войти', signUp:'Зарегистрироваться', email:'Эл. почта', password:'Пароль', noAccount:'Нет аккаунта?', haveAccount:'Уже есть аккаунт?', home:'Главная', lesson:'Урок', dual:'Двойной ИИ', games:'Игры', profile:'Профиль', call:'Позвонить Luxori', mySubjects:'Мои предметы', noSubjects:'Нет предметов', addSubject:'Новый предмет', upload:'Загрузить', addText:'+ Добавить текст', uploadMaterial:'Загрузите материал для разблокировки режимов', materials:'Материалы', studyModes:'Режимы обучения', back:'Назад', language:'Язык', signOut:'Выйти', totalXP:'Всего XP', lessons:'Уроки', correct:'Правильно', lessonDesc:'ИИ-репетитор объясняет шаг за шагом', dualDesc:'Атлас объясняет, Спарк испытывает', chatDesc:'Спрашивайте о своём материале', gamesDesc:'Карточки, викторины и многое другое', notes:'Заметки', startWriting:'Начните писать...', download:'Скачать', clear:'Очистить', subjectName:'Название предмета', emoji:'Эмодзи', color:'Цвет', save:'Сохранить', cancel:'Отмена', generating:'Генерирую...', connectionError:'Ошибка подключения. Попробуйте снова.', hi:'Привет! Я Luxori, ваш репетитор по', whatLearn:'Что вы хотите изучить сегодня?', explainMore:'Объяснить подробнее', giveExample:'Привести пример', simpler:'Попроще пожалуйста', keyPoint:'В чём главная мысль?', flashcards:'Карточки', speedQuiz:'Быстрый тест', examPrep:'Подготовка к экзамену', flashDesc:'Быстрая тренировка памяти', speedDesc:'10 вопросов, обгони часы', examDesc:'Полная симуляция экзамена' },
+  Arabic:     { signIn:'تسجيل الدخول', signUp:'إنشاء حساب', email:'البريد الإلكتروني', password:'كلمة المرور', noAccount:'ليس لديك حساب؟', haveAccount:'لديك حساب بالفعل؟', home:'الرئيسية', lesson:'درس', dual:'ذكاء اصطناعي مزدوج', games:'ألعاب', profile:'الملف الشخصي', call:'اتصل بـ Luxori', mySubjects:'موادي', noSubjects:'لا توجد مواد بعد', addSubject:'مادة جديدة', upload:'رفع', addText:'+ إضافة نص', uploadMaterial:'ارفع مادة لفتح أوضاع الدراسة', materials:'المواد', studyModes:'أوضاع الدراسة', back:'رجوع', language:'اللغة', signOut:'تسجيل الخروج', totalXP:'مجموع XP', lessons:'الدروس', correct:'صحيح', lessonDesc:'المدرس الذكي يشرح خطوة بخطوة', dualDesc:'أطلس يشرح، سبارك يتحدى', chatDesc:'اسأل عن أي شيء في موادك', gamesDesc:'بطاقات، اختبارات والمزيد', notes:'ملاحظات', startWriting:'ابدأ الكتابة...', download:'تحميل', clear:'مسح', subjectName:'اسم المادة', emoji:'إيموجي', color:'لون', save:'حفظ', cancel:'إلغاء', generating:'جارٍ التوليد...', connectionError:'خطأ في الاتصال. حاول مجددًا.', hi:'مرحبا! أنا Luxori، معلمك لـ', whatLearn:'ماذا تريد أن تتعلم اليوم؟', explainMore:'اشرح أكثر', giveExample:'أعطني مثالاً', simpler:'بشكل أبسط من فضلك', keyPoint:'ما هي النقطة الرئيسية؟', flashcards:'بطاقات', speedQuiz:'اختبار سريع', examPrep:'التحضير للامتحان', flashDesc:'تدريب سريع للذاكرة', speedDesc:'10 أسئلة، تغلب على الوقت', examDesc:'محاكاة امتحان كاملة' },
+  Mandarin:   { signIn:'登录', signUp:'注册', email:'电子邮件', password:'密码', noAccount:'没有账号？', haveAccount:'已有账号？', home:'首页', lesson:'课程', dual:'双AI', games:'游戏', profile:'个人资料', call:'致电 Luxori', mySubjects:'我的科目', noSubjects:'暂无科目', addSubject:'新科目', upload:'上传', addText:'+ 添加文字', uploadMaterial:'上传材料以解锁学习模式', materials:'材料', studyModes:'学习模式', back:'返回', language:'语言', signOut:'退出登录', totalXP:'总XP', lessons:'课程数', correct:'正确', lessonDesc:'AI导师逐步讲解', dualDesc:'Atlas讲解，Spark挑战', chatDesc:'针对材料提问', gamesDesc:'闪卡、测验等', notes:'笔记', startWriting:'开始写作...', download:'下载', clear:'清除', subjectName:'科目名称', emoji:'表情', color:'颜色', save:'保存', cancel:'取消', generating:'生成中...', connectionError:'连接错误，请重试。', hi:'你好！我是Luxori，你的', whatLearn:'今天想学什么？', explainMore:'详细解释', giveExample:'举个例子', simpler:'请简单一点', keyPoint:'重点是什么？', flashcards:'闪卡', speedQuiz:'快速测验', examPrep:'考试准备', flashDesc:'快速记忆练习', speedDesc:'10题，计时挑战', examDesc:'完整考试模拟' },
+  Japanese:   { signIn:'ログイン', signUp:'登録', email:'メール', password:'パスワード', noAccount:'アカウントがない？', haveAccount:'すでにアカウントをお持ちですか？', home:'ホーム', lesson:'レッスン', dual:'デュアルAI', games:'ゲーム', profile:'プロフィール', call:'Luxoriに電話', mySubjects:'マイ科目', noSubjects:'科目なし', addSubject:'新しい科目', upload:'アップロード', addText:'+ テキスト追加', uploadMaterial:'学習モードを解除するにはマテリアルをアップロード', materials:'マテリアル', studyModes:'学習モード', back:'戻る', language:'言語', signOut:'ログアウト', totalXP:'合計XP', lessons:'レッスン', correct:'正解', lessonDesc:'AIチューターが段階的に説明', dualDesc:'Atlasが説明、Sparkが挑戦', chatDesc:'教材について何でも聞いてください', gamesDesc:'フラッシュカード、クイズなど', notes:'メモ', startWriting:'書き始める...', download:'ダウンロード', clear:'クリア', subjectName:'科目名', emoji:'絵文字', color:'色', save:'保存', cancel:'キャンセル', generating:'生成中...', connectionError:'接続エラー。もう一度試してください。', hi:'こんにちは！私はLuxori、あなたの家庭教師です', whatLearn:'今日は何を学びたいですか？', explainMore:'詳しく説明', giveExample:'例を挙げる', simpler:'もっと簡単に', keyPoint:'要点は何ですか？', flashcards:'フラッシュカード', speedQuiz:'スピードクイズ', examPrep:'試験対策', flashDesc:'素早い記憶練習', speedDesc:'10問、時計に勝て', examDesc:'完全試験シミュレーション' },
+};
+
+// Get translation for current lang (fallback to English)
+function t(lang, key) {
+  return (T[lang] || T['English'])[key] || T['English'][key] || key;
+}
+
 //  app.js  — Luxori main React application
 // ─────────────────────────────────────────
 const { useState, useEffect, useCallback, useRef } = React;
@@ -221,10 +256,10 @@ function SubjectScreen({ subject, user, lang, onBack, onLesson, onDual, onChat, 
   };
 
   const modes = [
-    { id: 'lesson', icon: 'lesson', label: 'Lesson', desc: 'AI tutor explains step by step', color: '#eef2ff', onClick: onLesson },
-    { id: 'dual',   icon: 'users',  label: 'Dual AI', desc: 'Atlas explains, Spark challenges', color: '#fdf4ff', onClick: onDual },
-    { id: 'chat',   icon: 'chat',   label: 'Chat',    desc: 'Ask anything from your material', color: '#f0fdf4', onClick: onChat },
-    { id: 'games',  icon: 'game',   label: 'Games',   desc: 'Flashcards, quizzes and more', color: '#fff7ed', onClick: onGames },
+    { id: 'lesson', icon: 'lesson', label: t(lang,'lesson'), desc: t(lang,'lessonDesc'), color: '#eef2ff', onClick: onLesson },
+    { id: 'dual',   icon: 'users',  label: t(lang,'dual'), desc: t(lang,'dualDesc'), color: '#fdf4ff', onClick: onDual },
+    { id: 'chat',   icon: 'chat',   label: 'Chat',    desc: t(lang,'chatDesc'), color: '#f0fdf4', onClick: onChat },
+    { id: 'games',  icon: 'game',   label: t(lang,'games'),   desc: t(lang,'gamesDesc'), color: '#fff7ed', onClick: onGames },
   ];
 
   return h('div', null,
@@ -322,7 +357,7 @@ function ChatScreen({ subject, materials, lang, level, mode, user, onBack }) {
       if (saved?.length) setMsgs(saved);
       else {
         const welcome = { role: 'assistant', id: uid(), text: mode === 'lesson'
-          ? `Hi! I'm Luxori, your tutor for **${subject.name}**. What would you like to learn today?`
+          ? `${t(lang,'hi')} **${subject.name}**. ${t(lang,'whatLearn')}`
           : `Hi! Ask me anything about **${subject.name}** — I'll answer from your uploaded materials.`
         };
         setMsgs([welcome]);
@@ -354,7 +389,7 @@ function ChatScreen({ subject, materials, lang, level, mode, user, onBack }) {
   }, [input, msgs, loading]);
 
   const chips = mode === 'lesson'
-    ? ["Explain this more", "Give an example", "Simpler please", "What's the key point?"]
+    ? [t(lang,'explainMore'), t(lang,'giveExample'), t(lang,'simpler'), t(lang,'keyPoint')]
     : ["What's on the exam?", "Summarize this", "Key concepts?", "What should I focus on?"];
 
   return h('div', { className: 'chat-wrap' },
@@ -750,7 +785,7 @@ function ExamGame({ subject, materials, lang, level, onBack }) {
 
 // ── Profile screen ────────────────────────
 function ProfileScreen({ user, xp, lessonCount, correctCount, lang, onLangChange, onSignOut }) {
-  const levels = ['English', 'Svenska', 'Amharic', 'Tigrinya', 'Arabic', 'French', 'Spanish', 'Somali'];
+  const ui = (key) => t(lang, key);
   const level = xp < 500 ? 'Beginner' : xp < 2000 ? 'Intermediate' : xp < 5000 ? 'Advanced' : 'Expert';
   const nextLvl = xp < 500 ? 500 : xp < 2000 ? 2000 : xp < 5000 ? 5000 : 10000;
   const pct = Math.min(100, Math.round(xp / nextLvl * 100));
@@ -777,13 +812,15 @@ function ProfileScreen({ user, xp, lessonCount, correctCount, lang, onLangChange
     ),
     h('div', { className: 'divider' }),
     h('div', { style: { marginBottom: 16 } },
-      h('div', { className: 'label', style: { marginBottom: 8 } }, '🌍 Language'),
-      h('div', { className: 'chips' }, levels.map(l =>
-        h('button', { key: l, className: 'chip' + (lang === l ? ' on' : ''), onClick: () => onLangChange(l) }, l)
+      h('div', { className: 'label', style: { marginBottom: 8 } }, '🌍 ' + ui('language')),
+      h('div', { className: 'chips' }, LANGS.map(l =>
+        h('button', { key: l.code, className: 'chip' + (lang === l.code ? ' on' : ''), onClick: () => onLangChange(l.code) },
+          l.flag + ' ' + l.label
+        )
       ))
     ),
     h('div', { className: 'divider' }),
-    h('button', { className: 'btn btn-ghost btn-full', style: { color: 'var(--c-danger)', borderColor: 'var(--c-danger)' }, onClick: onSignOut }, 'Sign out')
+    h('button', { className: 'btn btn-ghost btn-full', style: { color: 'var(--c-danger)', borderColor: 'var(--c-danger)' }, onClick: onSignOut }, ui('signOut'))
   );
 }
 
@@ -857,14 +894,14 @@ function App() {
   };
 
   if (authLoad) return h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' } }, h('span', { className: 'loader' }));
-  if (!user) return h(AuthScreen, { onAuth: setUser });
+  if (!user) return h(AuthScreen, { onAuth: setUser, lang });
 
   const navItems = [
-    { id: 'subjects', icon: 'home',   label: 'Home' },
-    { id: 'lesson',   icon: 'lesson', label: 'Lesson' },
-    { id: 'dual',     icon: 'users',  label: 'Dual AI' },
-    { id: 'games',    icon: 'game',   label: 'Games' },
-    { id: 'profile',  icon: 'user',   label: 'Profile' },
+    { id: 'subjects', icon: 'home',   label: t(lang,'home') },
+    { id: 'lesson',   icon: 'lesson', label: t(lang,'lesson') },
+    { id: 'dual',     icon: 'users',  label: t(lang,'dual') },
+    { id: 'games',    icon: 'game',   label: t(lang,'games') },
+    { id: 'profile',  icon: 'user',   label: t(lang,'profile') },
   ];
 
   const renderMain = () => {
