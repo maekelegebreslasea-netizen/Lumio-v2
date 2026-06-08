@@ -181,10 +181,10 @@ function buildSidebar() {
     </div>
   `;
 
-  // Insert into DOM: left | root | right
+  // Insert into DOM: left | #root | right  (alla tre i body som flex-children)
   const root = document.getElementById('root');
-  document.body.insertBefore(left, root);
-  root.insertAdjacentElement('afterend', right);
+  document.body.insertBefore(left, root);   // left före root
+  root.after(right);                         // right efter root
 }
 
 // ── Init ──────────────────────────────────
