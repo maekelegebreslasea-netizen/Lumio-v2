@@ -117,7 +117,7 @@ async function vcStart() {
     _vc.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
     // 2. Language + subject context
-    try { _vc.lang = JSON.parse(localStorage.getItem('lx_lang')) || 'English'; } catch { _vc.lang = 'English'; }
+    _vc.lang = localStorage.getItem('lx_lang') || 'English';
     const subjEl = document.querySelector('[data-nid]');
     const subjName = subjEl?.dataset?.nnm || '';
 
@@ -154,8 +154,39 @@ async function vcStart() {
     _vc.dc = _vc.pc.createDataChannel('oai-events');
     _vc.dc.onopen = () => {
       const isSv = _vc.lang === 'Svenska';
-      _orbMode = 'listen';
-      vcStatus(isSv ? '🎙️ Lyssnar...' : '🎙️ Listening...');
+      _orbMode = 'think';
+      vcStatus(isSv ? 'Luxori tänker...' : 'Luxori thinking...');
+
+      // Send greeting — Luxori speaks first
+      const greetingMap = {
+        'Svenska':    'Hej! Jag är Luxori, din AI-studieassistent. Vad vill du lära dig idag?',
+        'English':    "Hi! I'm Luxori, your AI study assistant. What would you like to learn today?",
+        'German':     'Hallo! Ich bin Luxori, dein KI-Lernassistent. Was möchtest du heute lernen?',
+        'Norwegian':  'Hei! Jeg er Luxori, din AI-studieassistent. Hva vil du lære i dag?',
+        'French':     "Bonjour! Je suis Luxori, votre assistant d'étude IA. Que voulez-vous apprendre aujourd'hui?",
+        'Spanish':    '¡Hola! Soy Luxori, tu asistente de estudio IA. ¿Qué quieres aprender hoy?',
+        'Portuguese': 'Olá! Sou Luxori, seu assistente de estudo IA. O que você quer aprender hoje?',
+        'Russian':    'Привет! Я Luxori, ваш ИИ-помощник в учёбе. Что вы хотите изучить сегодня?',
+        'Arabic':     'مرحباً! أنا Luxori، مساعدك الذكي للدراسة. ماذا تريد أن تتعلم اليوم؟',
+        'Mandarin':   '你好！我是Luxori，你的AI学习助手。今天想学什么？',
+        'Japanese':   'こんにちは！私はLuxori、あなたのAI学習アシスタントです。今日は何を学びたいですか？',
+      };
+      const greeting = greetingMap[_vc.lang] || greetingMap['English'];
+
+      // Send as conversation item so Luxori speaks it
+      setTimeout(() => {
+        if (_vc.dc?.readyState === 'open') {
+          _vc.dc.send(JSON.stringify({
+            type: 'conversation.item.create',
+            item: {
+              type: 'message',
+              role: 'assistant',
+              content: [{ type: 'text', text: greeting }]
+            }
+          }));
+          _vc.dc.send(JSON.stringify({ type: 'response.create' }));
+        }
+      }, 500);
     };
 
     _vc.dc.onmessage = e => {
