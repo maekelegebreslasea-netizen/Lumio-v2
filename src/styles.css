@@ -308,6 +308,14 @@ textarea.input { resize: none; line-height: 1.6; }
   display: flex;
   flex-direction: column;
   height: calc(100vh - 56px - var(--nav-h));
+  flex: 1;
+  min-height: 0;
+}
+
+@media (min-width: 1024px) {
+  .chat-wrap {
+    height: 100vh;
+  }
 }
 
 .chat-msgs {
