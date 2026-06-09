@@ -4,7 +4,7 @@
 
 // ── Supabase ──────────────────────────────
 const SUPABASE_URL = 'https://jmsaceushtshgqulreyu.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_DCO2buENQ1j__8cN32TVTQ_miaroN4l';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impmc2FjZXVzaHRzaGdxdWxyZXl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2OTgxOTQsImV4cCI6MjA1OTI3NDE5NH0.N4DrM2i6p0l0mO5g5dP1VpKrX7MhwHTVWqUl52JqO_0';
 
 let _supa = null;
 function getSupa() {
@@ -43,6 +43,26 @@ async function callAI(system, messages, maxTokens = 800, tries = 3) {
         },
         body: JSON.stringify({ system, messages, maxTokens }),
       });
+
+      // If function not found, try direct API
+      if (res.status === 404) {
+        const key = window._ak;
+        if (!key) throw new Error('AI functions not deployed');
+        const dr = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'x-api-key': key,
+            'anthropic-version': '2023-06-01',
+            'content-type': 'application/json',
+            'anthropic-dangerous-direct-browser-access': 'true',
+          },
+          body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: maxTokens, system, messages })
+        });
+        if (!dr.ok) throw new Error('Direct API: ' + dr.status);
+        const dd = await dr.json();
+        return dd.content?.[0]?.text || '';
+      }
+
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       return data.text || '';
