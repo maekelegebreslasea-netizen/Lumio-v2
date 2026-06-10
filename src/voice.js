@@ -1,250 +1,195 @@
 // ─────────────────────────────────────────
-//  voice.js  — Luxori voice call
-//  Uses OpenAI Realtime API via WebRTC
+//  voice.js — Luxori Voice Call
+//  OpenAI Realtime API via WebRTC
+//  ✅ AI pratar först automatiskt
+//  ✅ Mikrofon alltid aktiv
+//  ✅ Naturligt telefonsamtal
 // ─────────────────────────────────────────
 
 const _vc = {
+  pc: null,       // RTCPeerConnection
+  dc: null,       // DataChannel
+  stream: null,   // Mic stream
   on: false,
-  pc: null,    // RTCPeerConnection
-  dc: null,    // DataChannel
-  stream: null,
-  audio: null,
   lang: 'English',
+  subject: '',
 };
 
-// ── Orb animation ─────────────────────────
-let _orbCtx = null, _orbMode = 'idle', _orbPhase = 0;
+// ── Greeting per language ─────────────────
+const GREETINGS = {
+  'Svenska':    'Hej! Jag är Luxori, din AI-studieassistent. Hur kan jag hjälpa dig idag?',
+  'English':    "Hi! I'm Luxori, your AI study assistant. How can I help you today?",
+  'German':     'Hallo! Ich bin Luxori, dein KI-Lernassistent. Wie kann ich dir heute helfen?',
+  'Norwegian':  'Hei! Jeg er Luxori, din AI-studieassistent. Hvordan kan jeg hjelpe deg i dag?',
+  'French':     "Bonjour! Je suis Luxori, votre assistant d'étude IA. Comment puis-je vous aider aujourd'hui?",
+  'Spanish':    '¡Hola! Soy Luxori, tu asistente de estudio IA. ¿Cómo puedo ayudarte hoy?',
+  'Portuguese': 'Olá! Sou Luxori, seu assistente de estudo IA. Como posso ajudar você hoje?',
+  'Russian':    'Привет! Я Luxori, ваш ИИ-репетитор. Чем я могу помочь вам сегодня?',
+  'Arabic':     'مرحباً! أنا Luxori، مساعدك الذكي للدراسة. كيف يمكنني مساعدتك اليوم؟',
+  'Mandarin':   '你好！我是Luxori，你的AI学习助手。今天我能帮你做什么？',
+  'Japanese':   'こんにちは！私はLuxori、あなたのAI学習アシスタントです。今日はどのようにお手伝いできますか？',
+};
 
-function initOrb() {
-  const cv = document.getElementById('vc-canvas');
-  if (!cv) return;
-  _orbCtx = cv.getContext('2d');
-  drawOrb();
+// ── Instructions per language ─────────────
+function getInstructions(lang, subject) {
+  const subj = subject ? ` Ämne: ${subject}.` : '';
+  const map = {
+    'Svenska':    `Du är Luxori, en varm AI-studieassistent i ett röstsamtal. Svara ALLTID på naturlig svenska. Max 2-3 korta meningar per svar. Var uppmuntrande och personlig.${subj}`,
+    'English':    `You are Luxori, a warm AI study tutor. Always respond in English. Keep answers SHORT — max 2-3 sentences. Be natural and encouraging.${subject ? ` Subject: ${subject}.` : ''}`,
+    'German':     `Du bist Luxori, ein freundlicher KI-Lernassistent. Antworte IMMER auf Deutsch. Maximal 2-3 Sätze.${subject ? ` Thema: ${subject}.` : ''}`,
+    'Norwegian':  `Du er Luxori, en varm AI-studieassistent. Svar ALLTID på norsk. Maks 2-3 setninger.${subject ? ` Fag: ${subject}.` : ''}`,
+    'French':     `Tu es Luxori, un assistant d'étude IA. Réponds TOUJOURS en français. Max 2-3 phrases.${subject ? ` Sujet: ${subject}.` : ''}`,
+    'Spanish':    `Eres Luxori, un asistente de estudio IA. Responde SIEMPRE en español. Máximo 2-3 oraciones.${subject ? ` Tema: ${subject}.` : ''}`,
+    'Portuguese': `Você é Luxori, um assistente IA. Responda SEMPRE em português. Máximo 2-3 frases.${subject ? ` Assunto: ${subject}.` : ''}`,
+    'Russian':    `Ты Luxori, ИИ-репетитор. Отвечай ВСЕГДА на русском. Максимум 2-3 предложения.${subject ? ` Тема: ${subject}.` : ''}`,
+    'Arabic':     `أنت Luxori، مساعد دراسة ذكاء اصطناعي. أجب دائماً بالعربية. 2-3 جمل كحد أقصى.`,
+    'Mandarin':   `你是Luxori，AI学习助手。始终用中文回答。最多2-3句话。${subject ? ` 科目：${subject}。` : ''}`,
+    'Japanese':   `あなたはLuxori、AI学習アシスタントです。必ず日本語で答えてください。最大2-3文。`,
+  };
+  return map[lang] || map['English'];
 }
 
-function drawOrb() {
-  if (!_orbCtx) return;
-  const ctx = _orbCtx, cx = 50, cy = 50, w = 100, h = 100;
-  ctx.clearRect(0, 0, w, h);
-  _orbPhase += 0.04;
-
-  const r = _orbMode === 'listen' ? 34 + Math.sin(_orbPhase * 2.5) * 6
-          : _orbMode === 'speak'  ? 32 + Math.sin(_orbPhase * 5) * 7
-          : 32 + Math.sin(_orbPhase) * 2;
-
-  // Outer glow
-  const glow = ctx.createRadialGradient(cx, cy, r * .2, cx, cy, r * 2);
-  glow.addColorStop(0, _orbMode === 'listen' ? 'rgba(5,150,105,.25)' : _orbMode === 'speak' ? 'rgba(79,70,229,.25)' : 'rgba(79,70,229,.1)');
-  glow.addColorStop(1, 'transparent');
-  ctx.fillStyle = glow;
-  ctx.beginPath(); ctx.arc(cx, cy, r * 2, 0, Math.PI * 2); ctx.fill();
-
-  // Main sphere
-  const grad = ctx.createRadialGradient(cx - r * .3, cy - r * .3, r * .05, cx, cy, r);
-  if (_orbMode === 'speak') {
-    grad.addColorStop(0, '#c4b5fd'); grad.addColorStop(.5, '#7c3aed'); grad.addColorStop(1, '#3b0764');
-  } else if (_orbMode === 'listen') {
-    grad.addColorStop(0, '#6ee7b7'); grad.addColorStop(.5, '#059669'); grad.addColorStop(1, '#064e3b');
-  } else if (_orbMode === 'think') {
-    grad.addColorStop(0, '#93c5fd'); grad.addColorStop(.5, '#3b82f6'); grad.addColorStop(1, '#1e3a8a');
-  } else {
-    grad.addColorStop(0, '#818cf8'); grad.addColorStop(.5, '#4f46e5'); grad.addColorStop(1, '#312e81');
-  }
-  ctx.fillStyle = grad;
-  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
-
-  // Shine
-  const shine = ctx.createRadialGradient(cx - r * .35, cy - r * .35, 0, cx - r * .2, cy - r * .2, r * .5);
-  shine.addColorStop(0, 'rgba(255,255,255,.4)');
-  shine.addColorStop(1, 'transparent');
-  ctx.fillStyle = shine;
-  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
-
-  // Rings when active
-  if (_orbMode !== 'idle') {
-    [1, 2].forEach(i => {
-      ctx.strokeStyle = `rgba(255,255,255,${.1 + Math.sin(_orbPhase * 3 + i) * .06})`;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(cx, cy, r + i * 12, 0, Math.PI * 2); ctx.stroke();
-    });
-  }
-
-  requestAnimationFrame(drawOrb);
-}
-
-// ── UI helpers ────────────────────────────
-function vcStatus(text) {
+// ── Status display ────────────────────────
+function vcStatus(msg) {
   const el = document.getElementById('vc-status');
-  if (el) el.textContent = text;
+  if (el) el.textContent = msg;
 }
 
-function vcAddMsg(role, text) {
-  const box = document.getElementById('vc-msgs');
-  if (!box || !text) return;
-  const b = document.createElement('div');
-  b.className = 'vc-bubble ' + role;
-  b.textContent = text;
-  box.appendChild(b);
-  setTimeout(() => { box.scrollTop = box.scrollHeight; }, 50);
+function vcOrb(mode) {
+  const orb = document.getElementById('vc-orb');
+  if (!orb) return;
+  orb.className = 'vc-orb ' + (mode || '');
 }
 
-// ── Show/hide FABs on mobile ──────────────
-function vcUpdateFabs() {
-  if (window.innerWidth >= 1024) return;
-  const visible = !!document.querySelector('.top-brand, [data-sid]');
-  const vcBtn  = document.getElementById('vc-fab');
-  if (vcBtn) vcBtn.style.display = visible ? 'flex' : 'none';
+// ── End call ─────────────────────────────
+function vcEnd() {
+  _vc.on = false;
+  if (_vc.dc)     { try { _vc.dc.close(); } catch {} _vc.dc = null; }
+  if (_vc.pc)     { try { _vc.pc.close(); } catch {} _vc.pc = null; }
+  if (_vc.stream) { _vc.stream.getTracks().forEach(t => t.stop()); _vc.stream = null; }
+
+  const screen = document.getElementById('vc-screen');
+  if (screen) screen.style.display = 'none';
+  vcOrb('idle');
+  vcStatus('');
 }
-setInterval(vcUpdateFabs, 700);
 
 // ── Start call ────────────────────────────
 async function vcStart() {
+  if (_vc.on) { vcEnd(); return; }
   _vc.on = true;
 
-  // Clear previous messages
-  const box = document.getElementById('vc-msgs');
-  if (box) box.innerHTML = '';
+  // Read language from localStorage
+  _vc.lang = localStorage.getItem('lx_lang') || 'English';
+  _vc.subject = localStorage.getItem('lx_active_subject') || '';
 
   // Show call screen
   const screen = document.getElementById('vc-screen');
-  if (screen) screen.classList.add('on');
-
-  _orbMode = 'think';
-  vcStatus('Connecting...');
+  if (screen) screen.style.display = 'flex';
+  vcOrb('think');
+  vcStatus(_vc.lang === 'Svenska' ? 'Ansluter...' : 'Connecting...');
 
   try {
-    // 1. Mic
+    // 1. Get mic FIRST (before API call)
+    vcStatus(_vc.lang === 'Svenska' ? 'Aktiverar mikrofon...' : 'Starting microphone...');
     _vc.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-    // 2. Language + subject context
-    _vc.lang = localStorage.getItem('lx_lang') || 'English';
-    const subjEl = document.querySelector('[data-nid]');
-    const subjName = subjEl?.dataset?.nnm || '';
-
-    // 3. Get ephemeral key
-    vcStatus('Getting session...');
+    // 2. Get ephemeral key from Netlify
+    vcStatus(_vc.lang === 'Svenska' ? 'Startar session...' : 'Starting session...');
     const sessRes = await fetch('/.netlify/functions/realtime', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subject: subjName, lang: _vc.lang }),
+      body: JSON.stringify({ lang: _vc.lang, subject: _vc.subject }),
     });
 
-    // Safe JSON parse — Netlify can return HTML on 404
     const rawText = await sessRes.text();
     let sessData;
     try { sessData = JSON.parse(rawText); }
-    catch(e) {
-      vcStatus('Server error — check Netlify functions');
-      console.error('[Voice] Non-JSON response:', rawText.slice(0, 200));
+    catch {
+      vcStatus('Server error');
+      console.error('[Voice] Non-JSON:', rawText.slice(0, 200));
       _vc.on = false;
       return;
     }
 
     if (!sessRes.ok || !sessData.ephemeral_key) {
       vcStatus('Session error: ' + (sessData.error || sessData.detail || 'HTTP ' + sessRes.status));
-      console.error('[Voice] Session error:', sessData);
+      console.error('[Voice]', sessData);
       _vc.on = false;
       return;
     }
 
-    // 4. WebRTC setup
+    // 3. WebRTC setup
     _vc.pc = new RTCPeerConnection();
 
-    // 5. Audio output
-    _vc.audio = document.createElement('audio');
-    _vc.audio.autoplay = true;
-    document.body.appendChild(_vc.audio);
-    _vc.pc.ontrack = e => {
-      _vc.audio.srcObject = e.streams[0];
+    // Add mic track
+    _vc.stream.getTracks().forEach(track => _vc.pc.addTrack(track, _vc.stream));
+
+    // Play AI audio
+    _vc.pc.ontrack = (e) => {
+      let audio = document.getElementById('vc-audio');
+      if (!audio) {
+        audio = document.createElement('audio');
+        audio.id = 'vc-audio';
+        audio.autoplay = true;
+        document.body.appendChild(audio);
+      }
+      audio.srcObject = e.streams[0];
     };
 
-    // 6. Add mic track
-    _vc.stream.getTracks().forEach(t => _vc.pc.addTrack(t, _vc.stream));
-
-    // 7. Data channel
+    // 4. DataChannel
     _vc.dc = _vc.pc.createDataChannel('oai-events');
+
     _vc.dc.onopen = () => {
-      const isSv = _vc.lang === 'Svenska';
-      _orbMode = 'think';
-      vcStatus(isSv ? 'Luxori tänker...' : 'Luxori thinking...');
+      vcOrb('listen');
+      vcStatus(_vc.lang === 'Svenska' ? '🎙️ Luxori lyssnar...' : '🎙️ Luxori listening...');
 
-      // Send greeting — Luxori speaks first
-      const greetingMap = {
-        'Svenska':    'Hej! Jag är Luxori, din AI-studieassistent. Vad vill du lära dig idag?',
-        'English':    "Hi! I'm Luxori, your AI study assistant. What would you like to learn today?",
-        'German':     'Hallo! Ich bin Luxori, dein KI-Lernassistent. Was möchtest du heute lernen?',
-        'Norwegian':  'Hei! Jeg er Luxori, din AI-studieassistent. Hva vil du lære i dag?',
-        'French':     "Bonjour! Je suis Luxori, votre assistant d'étude IA. Que voulez-vous apprendre aujourd'hui?",
-        'Spanish':    '¡Hola! Soy Luxori, tu asistente de estudio IA. ¿Qué quieres aprender hoy?',
-        'Portuguese': 'Olá! Sou Luxori, seu assistente de estudo IA. O que você quer aprender hoje?',
-        'Russian':    'Привет! Я Luxori, ваш ИИ-помощник в учёбе. Что вы хотите изучить сегодня?',
-        'Arabic':     'مرحباً! أنا Luxori، مساعدك الذكي للدراسة. ماذا تريد أن تتعلم اليوم؟',
-        'Mandarin':   '你好！我是Luxori，你的AI学习助手。今天想学什么？',
-        'Japanese':   'こんにちは！私はLuxori、あなたのAI学習アシスタントです。今日は何を学びたいですか？',
-      };
-      const greeting = greetingMap[_vc.lang] || greetingMap['English'];
-
-      // Send as conversation item so Luxori speaks it
+      // Send greeting — AI speaks first
+      const greeting = GREETINGS[_vc.lang] || GREETINGS['English'];
       setTimeout(() => {
-        if (_vc.dc?.readyState === 'open') {
-          _vc.dc.send(JSON.stringify({
-            type: 'conversation.item.create',
-            item: {
-              type: 'message',
-              role: 'assistant',
-              content: [{ type: 'text', text: greeting }]
-            }
-          }));
-          _vc.dc.send(JSON.stringify({ type: 'response.create' }));
-        }
-      }, 500);
+        if (_vc.dc?.readyState !== 'open') return;
+
+        // Create greeting message
+        _vc.dc.send(JSON.stringify({
+          type: 'conversation.item.create',
+          item: {
+            type: 'message',
+            role: 'assistant',
+            content: [{ type: 'text', text: greeting }]
+          }
+        }));
+
+        // Trigger AI to speak it
+        _vc.dc.send(JSON.stringify({ type: 'response.create' }));
+      }, 300);
     };
 
-    _vc.dc.onmessage = e => {
+    _vc.dc.onmessage = (e) => {
       try {
         const ev = JSON.parse(e.data);
-        if (ev.type === 'input_audio_buffer.speech_started') {
-          _orbMode = 'listen';
-          vcStatus(_vc.lang === 'Svenska' ? '🎙️ Jag hör dig...' : '🎙️ I hear you...');
-        }
-        if (ev.type === 'input_audio_buffer.speech_stopped') {
-          _orbMode = 'think';
-          vcStatus(_vc.lang === 'Svenska' ? 'Luxori tänker...' : 'Luxori thinking...');
-        }
         if (ev.type === 'response.audio.delta') {
-          _orbMode = 'speak';
-          vcStatus(_vc.lang === 'Svenska' ? 'Luxori talar...' : 'Luxori speaking...');
+          vcOrb('speak');
+          vcStatus(_vc.lang === 'Svenska' ? '🔊 Luxori pratar...' : '🔊 Luxori speaking...');
+        } else if (ev.type === 'response.done') {
+          vcOrb('listen');
+          vcStatus(_vc.lang === 'Svenska' ? '🎙️ Din tur...' : '🎙️ Your turn...');
+        } else if (ev.type === 'input_audio_buffer.speech_started') {
+          vcOrb('listen');
+          vcStatus(_vc.lang === 'Svenska' ? '🎤 Lyssnar på dig...' : '🎤 Listening to you...');
         }
-        if (ev.type === 'response.audio.done') {
-          _orbMode = 'listen';
-          vcStatus(_vc.lang === 'Svenska' ? '🎙️ Lyssnar...' : '🎙️ Listening...');
-        }
-        if (ev.type === 'conversation.item.input_audio_transcription.completed') {
-          vcAddMsg('user', ev.transcript);
-        }
-        if (ev.type === 'response.audio_transcript.done') {
-          vcAddMsg('ai', ev.transcript);
-        }
-        if (ev.type === 'error') {
-          console.error('[Voice event error]', ev.error);
-          vcStatus('Error: ' + (ev.error?.message || 'unknown'));
-        }
-      } catch (err) {
-        console.error('[Voice] Event parse error:', err);
-      }
+      } catch {}
     };
 
-    // 8. SDP offer
+    _vc.dc.onerror = (e) => {
+      console.error('[Voice] DC error:', e);
+      vcStatus('Connection error');
+    };
+
+    // 5. SDP exchange
     const offer = await _vc.pc.createOffer();
     await _vc.pc.setLocalDescription(offer);
 
-    // 9. Send to OpenAI
-    vcStatus('Connecting to Luxori AI...');
-    const sdpUrl = sessData.mode === 'ga'
-      ? 'https://api.openai.com/v1/realtime/calls'
-      : 'https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17';
-
-    const sdpRes = await fetch(sdpUrl, {
+    const sdpRes = await fetch('https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17', {
       method: 'POST',
       headers: {
         'Authorization': 'Bearer ' + sessData.ephemeral_key,
@@ -254,73 +199,118 @@ async function vcStart() {
     });
 
     if (!sdpRes.ok) {
-      const errText = await sdpRes.text();
-      vcStatus('Connection failed: ' + sdpRes.status);
-      console.error('[Voice] SDP error:', errText);
+      const err = await sdpRes.text();
+      vcStatus('SDP error: ' + sdpRes.status);
+      console.error('[Voice] SDP:', err);
+      vcEnd();
       return;
     }
 
     const answerSdp = await sdpRes.text();
     await _vc.pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
 
-    vcStatus(_vc.lang === 'Svenska' ? '✓ Ansluten — prata fritt' : '✓ Connected — speak freely');
+    // Session config — set language instructions
+    setTimeout(() => {
+      if (_vc.dc?.readyState !== 'open') return;
+      _vc.dc.send(JSON.stringify({
+        type: 'session.update',
+        session: {
+          instructions: getInstructions(_vc.lang, _vc.subject),
+          voice: ['Svenska','Norwegian','Mandarin','Japanese'].includes(_vc.lang) ? 'shimmer' : 'alloy',
+          turn_detection: { type: 'server_vad', silence_duration_ms: 800 },
+          input_audio_transcription: { model: 'whisper-1' },
+        }
+      }));
+    }, 200);
 
   } catch (e) {
     _vc.on = false;
-    console.error('[Voice] Start error:', e);
-    if (e.name === 'NotAllowedError') vcStatus('⚠️ Allow microphone access');
-    else if (e.name === 'NotFoundError') vcStatus('⚠️ No microphone found');
-    else vcStatus('Error: ' + e.name);
+    console.error('[Voice] Error:', e);
+    if (e.name === 'NotAllowedError')  vcStatus('⚠️ Tillåt mikrofon');
+    else if (e.name === 'NotFoundError') vcStatus('⚠️ Ingen mikrofon');
+    else vcStatus('⚠️ ' + e.message);
+    setTimeout(vcEnd, 3000);
   }
 }
 
-// ── End call ──────────────────────────────
-function vcEnd() {
-  _vc.on = false;
-  _orbMode = 'idle';
+// ── Build call UI ─────────────────────────
+function buildVoiceScreen() {
+  if (document.getElementById('vc-screen')) return;
 
-  if (_vc.dc)  try { _vc.dc.close(); }  catch {}
-  if (_vc.pc)  try { _vc.pc.close(); }  catch {}
-  if (_vc.stream) _vc.stream.getTracks().forEach(t => t.stop());
-  if (_vc.audio) { _vc.audio.srcObject = null; _vc.audio.remove(); }
-
-  _vc.pc = null; _vc.dc = null; _vc.stream = null; _vc.audio = null;
-
-  const screen = document.getElementById('vc-screen');
-  if (screen) screen.classList.remove('on');
-}
-
-// ── Inject voice UI into DOM ──────────────
-document.addEventListener('DOMContentLoaded', () => {
-  // FABs (mobile)
-  const vcFab = document.createElement('button');
-  vcFab.id = 'vc-fab';
-  vcFab.className = 'vc-fab';
-  vcFab.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
-  vcFab.style.display = 'none';
-  vcFab.onclick = vcStart;
-  document.body.appendChild(vcFab);
-
-  // Voice call screen
   const screen = document.createElement('div');
   screen.id = 'vc-screen';
-  screen.className = 'vc-screen';
-  screen.innerHTML = `
-    <canvas id="vc-canvas" width="100" height="100" style="border-radius:50%"></canvas>
-    <div class="vc-name">Luxori</div>
-    <div class="vc-status" id="vc-status">Connecting...</div>
-    <div class="vc-msgs" id="vc-msgs"></div>
-    <div class="vc-controls">
-      <div class="vc-wave">
-        <span></span><span></span><span></span>
-      </div>
-      <button class="vc-end-btn" onclick="vcEnd()">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
+  screen.style.cssText = `
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #0f172a;
+    z-index: 1000;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
   `;
+
+  screen.innerHTML = `
+    <div style="text-align:center">
+      <div id="vc-orb" class="vc-orb"></div>
+      <h2 style="color:#fff;font-size:1.8rem;font-weight:700;margin:24px 0 8px">Luxori</h2>
+      <p id="vc-status" style="color:#94a3b8;font-size:1rem"></p>
+    </div>
+    <button id="vc-end-btn" onclick="vcEnd()" style="
+      width: 64px; height: 64px; border-radius: 50%;
+      background: #ef4444; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; box-shadow: 0 4px 24px rgba(239,68,68,0.4);
+    ">✕</button>
+  `;
+
   document.body.appendChild(screen);
 
-  // Init orb
-  setTimeout(initOrb, 100);
+  // CSS for orb animation
+  const style = document.createElement('style');
+  style.textContent = `
+    .vc-orb {
+      width: 120px; height: 120px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #818cf8, #4f46e5);
+      margin: 0 auto;
+      box-shadow: 0 0 40px rgba(99,102,241,0.5);
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .vc-orb.speak {
+      animation: pulse-speak 0.8s ease-in-out infinite alternate;
+      box-shadow: 0 0 60px rgba(99,102,241,0.8);
+    }
+    .vc-orb.listen {
+      animation: pulse-listen 2s ease-in-out infinite;
+    }
+    .vc-orb.think {
+      animation: spin-slow 3s linear infinite;
+      opacity: 0.7;
+    }
+    @keyframes pulse-speak {
+      from { transform: scale(1); }
+      to   { transform: scale(1.15); }
+    }
+    @keyframes pulse-listen {
+      0%,100% { transform: scale(1); opacity:1; }
+      50%      { transform: scale(1.05); opacity:0.85; }
+    }
+    @keyframes spin-slow {
+      from { transform: rotate(0deg) scale(1); }
+      to   { transform: rotate(360deg) scale(1); }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+// ── Init ──────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  buildVoiceScreen();
+
+  // Bind call buttons
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-voice-call], #lx-nb-call, .call-luxori-btn');
+    if (btn) vcStart();
+  });
 });
