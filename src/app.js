@@ -958,7 +958,7 @@ function App() {
   }, [active]);
 
   // Persist
-  useEffect(() => { S.set('lx_lang', lang); }, [lang]);
+  useEffect(() => { S.set('lx_lang', lang); localStorage.setItem('lx_lang', lang); }, [lang]);
   useEffect(() => { S.set('lx_xp', xp); }, [xp]);
   useEffect(() => { S.set('lx_lc', lessonCount); }, [lessonCount]);
   useEffect(() => { S.set('lx_cc', correctCount); }, [correctCount]);
@@ -979,6 +979,7 @@ function App() {
 
   const openSubject = (s) => {
     setActive(s);
+    localStorage.setItem('lx_active_subject', s.name || '');
     db.loadMaterials(s.id).then(setMaterials);
     setSubTab('subject');
     setTab('subject');
